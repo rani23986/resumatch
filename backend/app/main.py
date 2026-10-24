@@ -1,3 +1,4 @@
+import os
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,11 +11,17 @@ app = FastAPI(
     version="0.1.0",
 )
 
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=cors_origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST", "DELETE"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -57,7 +64,7 @@ async def extract_resume(file: UploadFile = File(...)):
 
     try:
         extracted_text = extract_text_from_pdf(file_bytes)
-    except (ValueError, Exception) as exc:
+    except Exception as exc:
         raise HTTPException(
             status_code=422,
             detail=f"Could not extract resume text: {exc}",
